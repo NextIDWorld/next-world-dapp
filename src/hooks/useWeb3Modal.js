@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
+import { Web3Provider } from '@ethersproject/providers';
+
 const RPC = "https://scroll-sepolia.blockpi.network/v1/rpc/public";
 const NETID = 534351;
 
@@ -52,7 +54,7 @@ function useWeb3Modal(config = {}) {
       setConnecting(true)
       setAutoLoaded(true);
       const conn = await web3Modal.connect();
-      const newProvider = new ethers.BrowserProvider(conn,"any");
+      const newProvider = new Web3Provider(conn,"any");
       const signer = await newProvider.getSigner()
       const newCoinbase = await signer.getAddress();
       const {chainId} = await newProvider.getNetwork();
@@ -62,7 +64,7 @@ function useWeb3Modal(config = {}) {
       setNoProvider(true);
       setConnecting(false);
       conn.on('accountsChanged', accounts => {
-        const newProvider = new ethers.BrowserProvider(conn,"any");
+        const newProvider = new Web3Provider(conn,"any");
         setProvider(newProvider)
         setCoinbase(accounts[0]);
       });
