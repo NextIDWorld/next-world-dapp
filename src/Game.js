@@ -51,7 +51,7 @@ export default function Game(props) {
   const infos = [];
   let collision = false;
   let gameText;
-
+  let spaceships = [];
 
   const occupySpace = async () => {
     camera.updateMatrixWorld();
@@ -95,6 +95,8 @@ export default function Game(props) {
         setGameMessage(text);
 
       } catch (err) {
+        const text = new SpriteText(err.reason, 5, "red");
+        setGameMessage(text);
         console.log(err)
       }
       ref.current = {
@@ -344,20 +346,17 @@ export default function Game(props) {
     }
     setGameMessage(text);
   }
-
-  const generateFloor = () => {
+  const generateFloor = (floorYPosition,rotation) => {
     // floor
-
     let floorGeometry = new THREE.PlaneGeometry(2000, 2000, 100, 100);
-    floorGeometry.rotateX(- Math.PI / 2);
+    floorGeometry.rotateX(-Math.PI / 2);
 
     // vertex displacement
-
     let position = floorGeometry.attributes.position;
+    const colorsFloor = [];
 
     for (let i = 0, l = position.count; i < l; i++) {
-
-      vertex.fromBufferAttribute(position, i);
+      const vertex = new THREE.Vector3().fromBufferAttribute(position, i);
 
       vertex.x += Math.random() * 20 - 10;
       vertex.y += Math.random() * 2;
@@ -365,30 +364,55 @@ export default function Game(props) {
 
       position.setXYZ(i, vertex.x, vertex.y, vertex.z);
 
+      const color = new THREE.Color();
+      color.setHSL(Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75);
+      colorsFloor.push(color.r, color.g, color.b);
     }
 
     floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
-
-    position = floorGeometry.attributes.position;
-    const colorsFloor = [];
-
-    for (let i = 0, l = position.count; i < l; i++) {
-
-      color.setHSL(Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75);
-      colorsFloor.push(color.r, color.g, color.b);
-
-    }
-
     floorGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colorsFloor, 3));
 
-    const floorMaterial = new THREE.MeshBasicMaterial({ vertexColors: true });
+    const floorMaterial = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9, // Adjust the opacity as desired
+    });
 
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.position.set(1000,0,1000)
-
+    floor.position.set(1000, floorYPosition, 1000);
+    floor.rotation.x = rotation; // Rotate the lower floor 180 degrees around the X-axis
     scene.add(floor);
-  }
 
+    // Duplicate and offset the floor geometry for tiling effect
+    const tileOffset = 2000;
+    const tileGeometry = floorGeometry.clone();
+    tileGeometry.translate(tileOffset, 0, tileOffset);
+    const tile = new THREE.Mesh(tileGeometry, floorMaterial);
+    scene.add(tile);
+  };
+
+  const createBuilding = () => {
+    const buildingWidth = Math.random() * 15 + 5; // Random width between 5 and 20
+    const buildingHeight = Math.random() * 50 + 50; // Random height between 50 and 100
+    const buildingDepth = Math.random() * 15 + 5; // Random depth between 5 and 20
+
+    const geometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingDepth);
+    const material = new THREE.MeshPhongMaterial({ color: 0x808080 });
+    const building = new THREE.Mesh(geometry, material);
+
+    return building;
+  };
+  const generateBuildings = (y) => {
+    const numOfBuildings = 30; // Set the number of buildings you want in the cityscape
+
+    for (let i = 0; i < numOfBuildings; i++) {
+      const building = createBuilding();
+      building.position.x = Math.random() * 2000 - 100; // Random X position between -100 and 100
+      building.position.z = Math.random() * 2000 - 100; // Random Z position between -100 and 100
+      building.position.y = y;
+      scene.add(building);
+    }
+  };
   async function init() {
 
     ref.current = {
@@ -444,7 +468,11 @@ export default function Game(props) {
 
     raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, - 1, 0), 0, 10);
 
-    generateFloor();
+    generateFloor(0,0);
+    generateFloor(200,Math.PI);
+
+    generateBuildings(0);
+    generateBuildings(200);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -466,7 +494,7 @@ export default function Game(props) {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
   }
-
+  // Define spaceship movement variables
   async function animate() {
     const contractInitiated = ref.current?.contractInitiated;
     const client = ref.current?.client;
