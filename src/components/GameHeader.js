@@ -47,7 +47,7 @@ export default function GameHeader(props){
     </Box>
     {
       props.renderNextIdBox && state.coinbase &&
-      props.renderNextIdBox(state.provider)
+      props.renderNextIdBox(state.coinbase)
     }
 
     </>

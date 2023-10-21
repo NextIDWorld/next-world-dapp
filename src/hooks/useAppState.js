@@ -15,13 +15,9 @@ const useAppState = () => {
   const initialState = {
     provider: null,
     netId: null,
-    profile: null,
-    self: null,
-    user: null,
     gameContract: null,
     coinbase: null,
-    uri: null,
-    streamr: false,
+    uri: null
   }
 
   // Manage the state using React.useState()
@@ -47,27 +43,12 @@ const getActions = (setState) => ({
   setCoinbase: (coinbase) => {
     setState((state) => ({ ...state, coinbase: coinbase }))
   },
-  setSelf: (self) => {
-    setState((state) => ({ ...state, self: self }))
-  },
-  setProfile: (profile) => {
-    setState((state) => ({ ...state, profile: profile }))
-  },
-  setUser: (user) => {
-    setState((state) => ({ ...state, user: user }))
-  },
-  setClient: (client) => {
-    setState((state) => ({ ...state, client: client }))
-  },
   setUri: (uri) => {
     setState((state) => ({ ...state, uri: uri }))
   },
   setGameContract: (gameContract) => {
     setState((state) => ({ ...state, gameContract: gameContract }))
   },
-  setStreamr: (streamr) => {
-    setState((state) => ({ ...state, streamr: streamr }))
-  }
 })
 
 

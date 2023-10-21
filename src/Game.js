@@ -72,7 +72,7 @@ export default function Game(props) {
       }
       try {
         let text = new SpriteText("No URI selected", 5, "red");
-        let string = "test"//ref.current.uri;
+        let string = ref.current.uri;
         if(string){
           text = new SpriteText("Inserting data, accept transaction ...", 5, "blue");
         }

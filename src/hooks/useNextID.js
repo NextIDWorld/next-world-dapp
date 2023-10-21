@@ -1,25 +1,28 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { ethers } from "ethers";
 import * as ethUtil from 'ethereumjs-util';
 import * as secp256k1 from 'secp256k1';
 import {
   Box,
+  Paragraph,
+  Button
  } from 'grommet';
 
 
-const API_URL = 'https://proof-service.nextnext.id'
-
+const PROOF_API_URL = 'https://proof-service.next.id'
+const KV_API_URL = 'https://kv-service.next.id'
 
 function useNextID() {
 
-  const [payload, setPayload] = useState();
-  const [content, setContent] = useState();
+
+
+  const [proof,setProof] = useState();
+  const [avatar,setAvatar] = useState();
+  const [kv,setKV] = useState();
 
   const [pubkey, setPubKey] = useState();
-  const [postid,setPostId] = useState();
-  const [twitter_handler,setTwitter] = useState();
 
-  const [proofRes, setProofRes] = useState();
+
   const personalSign = async (message,provider) => {
 
     const signer = await provider.getSigner();
@@ -66,6 +69,90 @@ function useNextID() {
       publicKey: publicKeyHex
     };
   }
+
+  const checkProof = async (address) => {
+
+    const response = await fetch(`${PROOF_API_URL}/v1/proof?platform=ethereum&identity=${address}&exact=true`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      }
+    });
+    const proof = await response.json();
+    console.log(proof)
+    setProof(proof)
+  };
+
+  const getSK = async () => {
+
+    const response = await fetch(`${KV_API_URL}/v1/kv?avatar=${avatar}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      }
+    });
+    const newSK = await response.json();
+    console.log(newSK)
+    setKV(newSK)
+  };
+
+
+  const renderNextIdBox = (address) => {
+    return(
+      <Box>
+      {
+        !proof ?
+        <>
+        <Button secondary onClick={() => {checkProof(address)}} label="Check NextID Proof" />
+        </>:
+        <>
+        {
+          proof.ids.length > 0 ?
+          <Paragraph>Select Avatar</Paragraph> :
+          <>
+          <Paragraph>Ooooooops! It looks like you do not have a NextID yet.</Paragraph>
+          <Paragraph>Install Mask extension and connect your Metamask wallet there.</Paragraph>
+          </>
+
+        }
+        {
+          proof.ids.map(item => {
+            return(
+              <Box key={item.avatar} onClick={() => {setAvatar(item.avatar)}}>
+                {item.avatar}
+              </Box>
+            )
+          })
+        }
+        </>
+      }
+      {
+        kv &&
+        <Paragraph style={{overflowX: "auto"}}>KV {JSON.stringify(kv)}</Paragraph>
+
+      }
+      </Box>
+    )
+  };
+
+
+
+
+  useEffect(() => {
+    if(avatar){
+      getSK();
+    }
+  },[avatar])
+
+  /*
+  // Not being used but can be usefull
+  const [payload, setPayload] = useState();
+  const [content, setContent] = useState();
+  const [signPayload,setSignedPayload] = useState();
+  const [proofRes, setProofRes] = useState();
+
   const handleSignMessage = async (provider) => {
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -74,11 +161,11 @@ function useNextID() {
     const obj = await personalSign(message,provider);
     if (obj) {
       setPubKey(obj.publicKey);
-      const payload = await getPayload();
+      const payload = await getPayload(obj.coinbase);
       // Remove the '0x' prefix
       let signedPayload = await personalSign(payload.sign_payload,provider);
       const hexSignature = signedPayload.signature.slice(2);
-
+      setSignedPayload(signedPayload);
       // Convert hex to base64
       const base64Signature = Buffer.from(hexSignature, 'hex').toString('base64');
       console.log(`Signature: ${base64Signature}`);
@@ -87,19 +174,21 @@ function useNextID() {
     }
   };
 
-  const verifyPost = async () => {
+  const verifyPost = async (address) => {
     const body = {
       action: "create",
-      platform: "twitter",
-      identity: twitter_handler,
+      platform: "ethereum",
+      identity: address,
       public_key: pubkey?.slice(2),
-      proof_location: postid,
-      extra: {},
+      extra: {
+        wallet_signature: signPayload,
+        signature: null
+      },
       uuid: payload.uuid,
       created_at: payload.created_at
     };
     console.log(body)
-    const response = await fetch(`${API_URL}/v1/proof`, {
+    const response = await fetch(`${PROOF_API_URL}/v1/proof`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -111,14 +200,14 @@ function useNextID() {
     setProofRes(newProofRes);
   };
 
-  const getPayload = async () => {
+  const getPayload = async (address) => {
     const body = {
       action: "create",
-      platform: "twitter",
-      identity: twitter_handler,
+      platform: "ethereum",
+      identity: address,
       public_key: pubkey?.slice(2)
     };
-    const response = await fetch(`${API_URL}/v1/proof/payload`, {
+    const response = await fetch(`${PROOF_API_URL}/v1/proof/payload`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -130,34 +219,12 @@ function useNextID() {
     console.log(payloadRes);
     return payloadRes;
   };
+  */
 
-  const renderNextIdBox = (provider) => {
-    return(
-      <Box>
-      <label>Twitter Account</label>
-      <input type="text" onChange={(e) => { setTwitter(e.target.value) }} />
-      <button onClick={() => {handleSignMessage(provider)}}>Sign Message with MetaMask</button>
-      {
-        content &&
-        <>
-          <h3>Make post on twitter:</h3>
-          <div>{content}</div>
-          <br /><br />
-          <label>Post ID</label>
-          <input type="text" onChange={(e) => { setPostId(e.target.value) }} />
-          <button onClick={verifyPost}>Verify Post</button>
-          {JSON.stringify(proofRes)}
-        </>
-      }
-      </Box>
-    )
-  };
   return({
-    handleSignMessage,
-    verifyPost,
-    getPayload,
-    proofRes,
-    renderNextIdBox
+    renderNextIdBox,
+    avatar,
+    proof
   })
 }
 

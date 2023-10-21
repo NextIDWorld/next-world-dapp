@@ -39,7 +39,8 @@ export default function App() {
   } = useWeb3Modal();
 
   const {
-    renderNextIdBox
+    renderNextIdBox,
+    avatar
   } = useNextID();
 
   useEffect(() => {
@@ -58,14 +59,22 @@ export default function App() {
   ]);
 
   useEffect(() => {
-  let newGameContract;
-  if (netId === 534351) {
-    newGameContract = new ethers.Contract(addresses.game.test_scroll, abis.game, provider);
+    let newGameContract;
+    if (netId === 534351) {
+      newGameContract = new ethers.Contract(addresses.game.test_scroll, abis.game, provider);
 
-  }
-  setGameContract(newGameContract);
+    }
+    setGameContract(newGameContract);
 
-}, [netId, provider])
+  }, [netId, provider])
+
+
+  useEffect(() => {
+    if(avatar){
+      actions.setUri(avatar);
+    }
+  },[avatar])
+
 
   const getMetadata = item => {
     return (
